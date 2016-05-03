@@ -64,7 +64,10 @@ def getdaterange():
     since = str(input('start date：'))
     until = str(input(' end date：'))
     try:
-        datetime.datetime.strptime(since, '%Y/%m/%d')
+        if since == '':
+            pass
+        else:
+            datetime.datetime.strptime(since, '%Y/%m/%d')
         if until == '':
             pass
         else:
