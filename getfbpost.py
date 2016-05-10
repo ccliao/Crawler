@@ -9,6 +9,20 @@ def getdata(r):
     jd = json.loads(r.text)['data']
     df = pd.read_json(json.dumps(jd))
 
+    # 貼文內容
+    pmessage, pname, link, permalink_url = [], [], [], []
+    if 'message' in df:
+        for i in df['message']:
+            pmessage.append(i)
+    else:
+        pmessage=""
+    for i in df['name']:
+        pname.append(i)
+    for i in df['link']:
+        link.append(i)
+    for i in df['permalink_url']:
+        permalink_url.append(i)
+
     # 調整時區為台灣時間
     created_time = []
     for i in df['created_time']:
@@ -43,13 +57,59 @@ def getdata(r):
         for i in range(len(df['comments'])):
             comment_count.append(0)
 
-    lion_fb = pd.DataFrame({'created_time': created_time, 'message': df['message'], 'reaction_count': reaction_count, \
-                            'share_count': share_count, 'comment_count': comment_count, 'linkname': df['name'], \
-                            'link': df['link'], 'postlink': df['permalink_url']})
-    if not os.path.isfile("lion_fb.csv"):
-        lion_fb.to_csv("lion_fb.csv")
+    # 貼文insights
+    Post_Total_Reach, Post_Consumptions, Post_Consumptions_other, Post_Consumptions_photo, Post_Consumptions_link = [], [], [], [], []
+    if 'insights' in df:
+        for i in df['insights']:
+            # 已觸及人數Lifetime Post Total Reach
+            if i['data'][4]['title'] == 'Lifetime Post Total Reach':
+                Post_Total_Reach.append(i['data'][4]['values'][0]['value'])
+            else:
+                Post_Total_Reach.append(0)
+
+            # 貼文點擊次數Lifetime Post Consumptions
+            if i['data'][44]['title'] == 'Lifetime Post Consumptions':
+                Post_Consumptions.append(i['data'][44]['values'][0]['value'])
+            else:
+                Post_Consumptions.append(0)
+
+            # 貼文點擊次數分類Lifetime Post Consumptions by type
+            if i['data'][46]['title'] == 'Lifetime Post Consumptions by type':
+                try:
+                    Post_Consumptions_other.append(i['data'][46]['values'][0]['value']['other clicks'])
+                except:
+                    Post_Consumptions_other.append(0)
+                try:
+                    Post_Consumptions_photo.append(i['data'][46]['values'][0]['value']['photo view'])
+                except:
+                    Post_Consumptions_photo.append(0)
+                try:
+                    Post_Consumptions_link.append(i['data'][46]['values'][0]['value']['link clicks'])
+                except:
+                    Post_Consumptions_link.append(0)
+            else:
+                Post_Consumptions_other.append(0)
+                Post_Consumptions_photo.append(0)
+                Post_Consumptions_link.append(0)
     else:
-        lion_fb.to_csv("lion_fb.csv", mode='a', header=False)
+        Post_Total_Reach=0
+        Post_Consumptions=0
+        Post_Consumptions_other=0
+        Post_Consumptions_photo=0
+        Post_Consumptions_link=0
+
+    lion_fb = pd.DataFrame(
+        {'postdate': created_time, 'message': pmessage, 'reaction_count': reaction_count, 'share_count': share_count, \
+         'comment': comment_count, 'linkname': pname, 'link': link, 'postlink': permalink_url, 'type':df['type'], \
+         'Post_Total_Reach': Post_Total_Reach, 'Post_Consumptions': Post_Consumptions, \
+         'Post_Consumptions_other': Post_Consumptions_other, 'Post_Consumptions_photo': Post_Consumptions_photo, \
+         'Post_Consumptions_link': Post_Consumptions_link})
+
+    savefilename = fbname + "_fb-v" + datetime.datetime.now().strftime('%Y%m%d') + ".csv"
+    if not os.path.isfile(savefilename):
+        lion_fb.to_csv(savefilename)
+    else:
+        lion_fb.to_csv(savefilename, mode='a', header=False)
 
 def getnextpaging(r):
     paging = json.loads(r.text)['paging']
@@ -83,7 +143,7 @@ if __name__ == '__main__':
     fbname = input('your facebook name or id： ')
     since, until = getdaterange()
     url = 'https://graph.facebook.com/v2.6/{}/posts?fields=name%2Cmessage%2Ccreated_time%2Cid%2Cshares%2C \
-                    reactions.summary(1)%2Clink%2Cpermalink_url%2Ccomments.summary(1) \
+                    reactions.summary(1)%2Clink%2Cpermalink_url%2Ccomments.summary(1)%2Cinsights%2Ctype \
                     &limit=100&since={}&until={}&access_token={}'.format(fbname, since, until, ACCESSTOKEN)
 
     i = 0
