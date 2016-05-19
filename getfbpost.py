@@ -4,18 +4,64 @@ import pandas as pd
 import os
 import datetime
 import time
+import re
+# from dateutil import tz
 
-def getdata(r):
+def getdata(r, key):
     jd = json.loads(r.text)['data']
     df = pd.read_json(json.dumps(jd))
 
     # 貼文內容
     pmessage, pname, link, permalink_url = [], [], [], []
+    short_url, original_url, shorturl_createdtime, click_count, referrer, platform, country, browser = [], [], [], [], [], [], [], []
     if 'message' in df:
         for i in df['message']:
             pmessage.append(i)
+            # 取得短網址
+            if key == '':
+                short_url.append('')
+                original_url.append('')
+                # shorturl_createdtime.append('')
+                click_count.append('')
+                referrer.append('')
+                platform.append('')
+                country.append('')
+                browser.append('')
+            else:
+                shorturl = re.findall("http[s]*://goo.gl/[A-Z a-z 0-9]+", i)
+
+                # 取得短網址相關資訊
+                if shorturl == []:
+                    short_url.append('')
+                    original_url.append('')
+                    # shorturl_createdtime.append('')
+                    click_count.append('')
+                    referrer.append('')
+                    platform.append('')
+                    country.append('')
+                    browser.append('')
+                else:
+                    originalurl, shorturlcreatedtime, clickcount_all, referrer_all, platform_all, country_all, browser_all = getgoogleshorturl(
+                        key, shorturl[0].strip())
+                    short_url.append(' , '.join(j for j in shorturl))
+                    original_url.append(' , '.join(j for j in originalurl))
+                    # shorturl_createdtime.append(' , '.join(j for j in shorturlcreatedtime))
+                    click_count.append(' , '.join(j for j in clickcount_all))
+                    referrer.append(' , '.join(j for j in referrer_all))
+                    platform.append(' , '.join(j for j in platform_all))
+                    country.append(' , '.join(j for j in country_all))
+                    browser.append(' , '.join(j for j in browser_all))
     else:
-        pmessage=""
+        pmessage.append('')
+        short_url.append('')
+        original_url.append('')
+        # shorturl_createdtime.append('')
+        click_count.append('')
+        referrer.append('')
+        platform.append('')
+        country.append('')
+        browser.append('')
+
     for i in df['name']:
         pname.append(i)
     for i in df['link']:
@@ -98,12 +144,13 @@ def getdata(r):
         Post_Consumptions_photo=0
         Post_Consumptions_link=0
 
-    lion_fb = pd.DataFrame(
-        {'postdate': created_time, 'message': pmessage, 'reaction_count': reaction_count, 'share_count': share_count, \
+    lion_fb = pd.DataFrame({'postdate': created_time, 'message': pmessage, 'reaction_count': reaction_count, 'share_count': share_count, \
          'comment': comment_count, 'linkname': pname, 'link': link, 'postlink': permalink_url, 'type':df['type'], \
          'Post_Total_Reach': Post_Total_Reach, 'Post_Consumptions': Post_Consumptions, \
          'Post_Consumptions_other': Post_Consumptions_other, 'Post_Consumptions_photo': Post_Consumptions_photo, \
-         'Post_Consumptions_link': Post_Consumptions_link})
+         'Post_Consumptions_link': Post_Consumptions_link, 'shorturl': short_url, 'originalurl': original_url, \
+         'clickcount_all': click_count, 'referrer_all': referrer, \
+         'platform_all': platform, 'country_all': country, 'browser_all': browser})
 
     savefilename = fbname + "_fb-v" + datetime.datetime.now().strftime('%Y%m%d') + ".csv"
     if not os.path.isfile(savefilename):
@@ -218,9 +265,31 @@ def getcommentslist(fbname, since, until, ACCESSTOKEN):
             url = ''
     print('Get Comments List Finished')
 
+def getgoogleshorturl(key, shorturl):
+    gurl = 'https://www.googleapis.com/urlshortener/v1/url?shortUrl={}&projection=FULL&key={}'.format(shorturl, key)
+    req= requests.get(gurl).json()
+
+    #僅先納入alltime,尚有month,week,day,twoHours
+    originalurl,shorturlcreatedtime,clickcount_all,referrer_all,platform_all,country_all,browser_all=[],[],[],[],[],[],[]
+    originalurl.append(req['longUrl']) #原網址
+    # d = datetime.datetime.strptime(req['created'][0:19], "%Y-%m-%dT%H:%M:%S")
+    # d = d.replace(tzinfo=tz.gettz('UTC'))
+    # shorturlcreatedtime.append(str(d.astimezone(tz.gettz('Asia/Taipei')).date()))  #短址設立日期
+    clickcount_all.append(req['analytics']['allTime']['shortUrlClicks']) #短址點擊量
+    for i in req['analytics']['allTime']['referrers']:
+        referrer_all.append(str(i['count'])+' from '+i['id']) #短址點擊量來源
+    for i in req['analytics']['allTime']['platforms']:
+        platform_all.append(str(i['count'])+' from '+i['id']) #短址點擊量平台
+    for i in req['analytics']['allTime']['countries']:
+        country_all.append(str(i['count'])+' from '+i['id']) #短址點擊量國家
+    for i in req['analytics']['allTime']['browsers']:
+        browser_all.append(str(i['count'])+' from '+i['id']) #短址點擊量國家
+    return originalurl,shorturlcreatedtime,clickcount_all,referrer_all,platform_all,country_all,browser_all
+
 if __name__ == '__main__':
     ACCESSTOKEN = input('your facebook access token： ')
     fbname = input('your facebook name or id： ')
+    google_key = input('your google api key： ')
     since, until = getdaterange()
     url = 'https://graph.facebook.com/v2.6/{}/posts?fields=name%2Cmessage%2Ccreated_time%2Cid%2Cshares%2C \
                     reactions.summary(1)%2Clink%2Cpermalink_url%2Ccomments.summary(1)%2Cinsights%2Ctype \
@@ -232,7 +301,7 @@ if __name__ == '__main__':
         if len(json.loads(r.text)['data']) == 0:
             url = ''
         else:
-            getdata(r)
+            getdata(r,google_key)
             url = getnextpaging(r)
             i += 1
             print (i)
