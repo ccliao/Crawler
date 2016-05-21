@@ -12,17 +12,21 @@ def getdata(r, gtoken, btoken):
     df = pd.read_json(json.dumps(jd))
 
     # 貼文內容
-    pmessage, pname, link, permalink_url = [], [], [], []
+    pmessage, hashtag, pname, link, permalink_url = [], [], [], [], []
     short_url, original_url, click_count, referrer, platform, country, browser = [],[],[],[],[],[],[]
     short_url2, original_url2, click_count2, referrer2, country2, platform2, browser2 = [],[],[],[],[],[],[]
     if 'message' in df:
         for index,i in enumerate(df['message']):
             pmessage.append(i)
-            shorturls = re.findall("http[s]*://(?:goo.gl|bit.ly)/[A-Z a-z 0-9]+", i)
-            shorturls2 = re.findall("http[s]*://(?:goo.gl|bit.ly)/[A-Z a-z 0-9]+", df['link'][index])
-            shorturls = shorturls + shorturls2
+            hashtag.append(' '.join(j for j in re.findall("#\w+",i)))
+            shorturls = re.findall("http[s]*://(?:goo.gl|bit.ly)/\S+", i)
+            shorturls2 = re.findall("http[s]*://(?:goo.gl|bit.ly)/\S+", df['link'][index])
+            if shorturls+shorturls2 == []:
+                shorturls = {}
+            else:
+                shorturls = set(shorturls + shorturls2)
             n = 0
-            if shorturls != []:
+            if shorturls != {}:
                 s = len(shorturls)
                 for shorturl in shorturls:
                     n += 1
@@ -115,6 +119,7 @@ def getdata(r, gtoken, btoken):
                 browser2.append('')
     else:
         pmessage.append('')
+        hashtag.append('')
         short_url.append('')
         original_url.append('')
         click_count.append('')
@@ -220,8 +225,8 @@ def getdata(r, gtoken, btoken):
          'Post_Consumptions_link': Post_Consumptions_link, 'shorturl':short_url, 'originalurl':original_url, \
          'clickcount':click_count, 'referrer':referrer, 'platform':platform, 'country':country, 'browser':browser, \
          'shorturl2':short_url2, 'originalurl2':original_url2, 'clickcount2':click_count2, 'referrer2':referrer2, \
-         'platform2':platform2, 'country2':country2, 'browser2':browser2},
-        columns = ["postdate","postlink","type","message","link","linkname","reaction_count","share_count","comment_count", \
+         'platform2':platform2, 'country2':country2, 'browser2':browser2, 'hashtag':hashtag},
+        columns = ["postdate","postlink","type","message","hashtag","link","linkname","reaction_count","share_count","comment_count", \
                    "Post_Total_Reach","Post_Consumptions","Post_Consumptions_link","Post_Consumptions_photo", \
                    "Post_Consumptions_other","shorturl","originalurl","clickcount","referrer","country","browser","platform",\
                    "shorturl2","originalurl2","clickcount2","referrer2","country2","browser2","platform2"])
@@ -424,7 +429,6 @@ if __name__ == '__main__':
         r = requests.get(url)
         if len(json.loads(r.text)['data']) == 0:
             url = ''
-            print ('Please check!!! No Data.')
         else:
             getdata(r,gtoken,btoken)
             url = getnextpaging(r)
