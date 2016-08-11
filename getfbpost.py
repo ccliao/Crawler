@@ -186,7 +186,7 @@ def getdata(r, gtoken, btoken):
             if i != i: #判讀是否為nan
                 comment_count.append(0)
             else:
-                if 'total_count' in i:
+                if 'total_count' in i['summary']:
                     comment_count.append(i['summary']['total_count'])
                 else:
                     comment_count.append(0)
@@ -450,9 +450,10 @@ if __name__ == '__main__':
         if len(json.loads(r.text)['data']) == 0:
             url = ''
         else:
-            print("第" + str(page) + "頁開始")
+            # print("第" + str(page) + "頁開始")
             getdata(r,gtoken,btoken)
-            print("第" + str(page) + "頁結束")
+            # print("第" + str(page) + "頁結束")
+            print (page)
             url = getnextpaging(r)
             page += 1
     print("Get Post Finished")
