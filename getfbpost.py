@@ -17,10 +17,17 @@ def getdata(r, gtoken, btoken):
     short_url2, original_url2, click_count2, referrer2, country2, platform2, browser2 = [],[],[],[],[],[],[]
     if 'message' in df:
         for index,i in enumerate(df['message']):
+            print (index)
             pmessage.append(i)
-            hashtag.append(' '.join(j for j in re.findall("#\w+",i)))
-            shorturls = re.findall("http[s]*://(?:goo.gl|bit.ly)/\S+", i)
-            shorturls2 = re.findall("http[s]*://(?:goo.gl|bit.ly)/\S+", df['link'][index])
+            if i != i:
+                hashtag.append('')
+                shorturls = []
+                shorturls2 = []
+            else:
+                hashtag.append(' '.join(j for j in re.findall("#\w+",i)))
+                # \S改為\w,因為短網址後面接"。"會產生錯誤
+                shorturls = re.findall("http[s]*://(?:goo.gl|bit.ly)/\w+", i)
+                shorturls2 = re.findall("http[s]*://(?:goo.gl|bit.ly)/\w+", df['link'][index])
             if shorturls+shorturls2 == []:
                 shorturls = {}
             else:
@@ -134,6 +141,7 @@ def getdata(r, gtoken, btoken):
         country2.append('')
         platform2.append('')
         browser2.append('')
+    print ('message完成')
 
     for i in df['name']:
         pname.append(i)
@@ -141,16 +149,23 @@ def getdata(r, gtoken, btoken):
         link.append(i)
     for i in df['permalink_url']:
         permalink_url.append(i)
+        print (i)
+    print ('name,link,permalink_url完成')
 
     # 調整時區為台灣時間
     created_time = []
     for i in df['created_time']:
         created_time.append(i.tz_localize('UTC').tz_convert('Asia/Taipei').strftime('%Y-%m-%d %H:%M:%S %A'))
+    print ('created_time完成')
 
     #貼文按讚數
     reaction_count = []
     for i in df['reactions']:
-        reaction_count.append(i['summary']['total_count'])
+        if i != i:
+            reaction_count.append(0)
+        else:
+            reaction_count.append(i['summary']['total_count'])
+    print('reaction_count完成')
 
     #貼文分享數 shares
     share_count = []
@@ -163,6 +178,7 @@ def getdata(r, gtoken, btoken):
     else:
         for i in range(len(df['reactions'])):
             share_count.append(0)
+    print('share_count完成')
 
     #貼文留言數
     comment_count = []
@@ -171,10 +187,14 @@ def getdata(r, gtoken, btoken):
             if i != i: #判讀是否為nan
                 comment_count.append(0)
             else:
-                comment_count.append(i['summary']['total_count'])
+                if 'total_count' in i:
+                    comment_count.append(i['summary']['total_count'])
+                else:
+                    comment_count.append(0)
     else:
         for i in range(len(df['comments'])):
             comment_count.append(0)
+    print('comment_count完成')
 
     # 貼文insights
     Post_Total_Reach, Post_Consumptions, Post_Consumptions_other, Post_Consumptions_photo, Post_Consumptions_link = [], [], [], [], []
@@ -216,6 +236,7 @@ def getdata(r, gtoken, btoken):
         Post_Consumptions_other=''
         Post_Consumptions_photo=''
         Post_Consumptions_link=''
+    print('insights完成')
 
     lion_fb = pd.DataFrame(
         {'postdate': created_time, 'message': pmessage, 'reaction_count': reaction_count, 'share_count': share_count, \
@@ -424,16 +445,17 @@ if __name__ == '__main__':
                     reactions.summary(1)%2Clink%2Cpermalink_url%2Ccomments.summary(1)%2Cinsights%2Ctype \
                     &limit=100&since={}&until={}&access_token={}'.format(fbname, since, until, ACCESSTOKEN)
 
-    i = 0
+    page = 1
     while url != '':
         r = requests.get(url)
         if len(json.loads(r.text)['data']) == 0:
             url = ''
         else:
+            print("第" + str(page) + "頁開始")
             getdata(r,gtoken,btoken)
+            print("第" + str(page) + "頁結束")
             url = getnextpaging(r)
-            i += 1
-            print (i)
+            page += 1
     print("Get Post Finished")
 
     Go = input('Continue to get Reactions&Comments User List(Y/N)： ')
@@ -446,3 +468,6 @@ if __name__ == '__main__':
     else:
         print ("Totally Finished")
 
+#  facebook graph api : 212969699079588|9-2n6hY92e9lZ4jOdJ3V2-rHNNw
+#     gtoken='AIzaSyDgutgIOgNTEsvamJd0A0bYAgLBo3V6zvo'
+#     btoken='e788d149c3c65be2cc2d19cf407006228c36e73b'
