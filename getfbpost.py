@@ -17,7 +17,7 @@ def getdata(r, gtoken, btoken):
     short_url2, original_url2, click_count2, referrer2, country2, platform2, browser2 = [],[],[],[],[],[],[]
     if 'message' in df:
         for index,i in enumerate(df['message']):
-            print (index)
+            # print (index)
             pmessage.append(i)
             if i != i:
                 hashtag.append('')
@@ -141,7 +141,7 @@ def getdata(r, gtoken, btoken):
         country2.append('')
         platform2.append('')
         browser2.append('')
-    print ('message完成')
+    # print ('message完成')
 
     for i in df['name']:
         pname.append(i)
@@ -149,14 +149,13 @@ def getdata(r, gtoken, btoken):
         link.append(i)
     for i in df['permalink_url']:
         permalink_url.append(i)
-        print (i)
-    print ('name,link,permalink_url完成')
+    # print ('name,link,permalink_url完成')
 
     # 調整時區為台灣時間
     created_time = []
     for i in df['created_time']:
         created_time.append(i.tz_localize('UTC').tz_convert('Asia/Taipei').strftime('%Y-%m-%d %H:%M:%S %A'))
-    print ('created_time完成')
+    # print ('created_time完成')
 
     #貼文按讚數
     reaction_count = []
@@ -165,7 +164,7 @@ def getdata(r, gtoken, btoken):
             reaction_count.append(0)
         else:
             reaction_count.append(i['summary']['total_count'])
-    print('reaction_count完成')
+    # print('reaction_count完成')
 
     #貼文分享數 shares
     share_count = []
@@ -178,7 +177,7 @@ def getdata(r, gtoken, btoken):
     else:
         for i in range(len(df['reactions'])):
             share_count.append(0)
-    print('share_count完成')
+    # print('share_count完成')
 
     #貼文留言數
     comment_count = []
@@ -194,7 +193,7 @@ def getdata(r, gtoken, btoken):
     else:
         for i in range(len(df['comments'])):
             comment_count.append(0)
-    print('comment_count完成')
+    # print('comment_count完成')
 
     # 貼文insights
     Post_Total_Reach, Post_Consumptions, Post_Consumptions_other, Post_Consumptions_photo, Post_Consumptions_link = [], [], [], [], []
@@ -236,7 +235,7 @@ def getdata(r, gtoken, btoken):
         Post_Consumptions_other=''
         Post_Consumptions_photo=''
         Post_Consumptions_link=''
-    print('insights完成')
+    # print('insights完成')
 
     lion_fb = pd.DataFrame(
         {'postdate': created_time, 'message': pmessage, 'reaction_count': reaction_count, 'share_count': share_count, \
@@ -443,8 +442,8 @@ if __name__ == '__main__':
     since, until = getdaterange()
     url = 'https://graph.facebook.com/v2.6/{}/posts?fields=name%2Cmessage%2Ccreated_time%2Cid%2Cshares%2C \
                     reactions.summary(1)%2Clink%2Cpermalink_url%2Ccomments.summary(1)%2Cinsights%2Ctype \
-                    &limit=100&since={}&until={}&access_token={}'.format(fbname, since, until, ACCESSTOKEN)
-
+                    &since={}&until={}&access_token={}'.format(fbname, since, until, ACCESSTOKEN)
+#&limit=100
     page = 1
     while url != '':
         r = requests.get(url)
