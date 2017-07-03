@@ -1,8 +1,3 @@
-
-# coding: utf-8
-
-# In[2]:
-
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup as bs
@@ -10,6 +5,7 @@ import os
 from flask import session
 from time import sleep
 from random import randint
+import datetime
 
 #讀取帳號密碼
 with open('nccc.txt', 'r') as nccc_account:
@@ -20,35 +16,18 @@ with open('nccc.txt', 'r') as nccc_account:
         Passwd = i.split()[2]
         print (LoginId+"開始處理")
                
-        #登入帳號參數
-        postData = {
-            'Action': "Authenticate",
-            'UserType': "6",
-            'CounterName': "Shop",
-            'OfficeCode' : OfficeCode,
-            'LoginId' : LoginId,
-            'Passwd' : Passwd
-        }
-
-        #查詢資料參數
-        payload = {
-            'Action':'BookList',
-            'Type':'Read',
-            'AcqFID':OfficeCode,
-            'RetlID':LoginId,
-            'CardNo':'',
-            'BeginDateYY':'2017',
-            'BeginDateMM':'1',
-            'BeginDateDD':'1',
-            'EndDateMM':'5',
-            'EndDateDD':'31',
-            'RequestType':'2'
-        }
-
         url = "https://inquiry.nccc.com.tw/NASApp/NTC/servlet/com.du.mvc.EntryServlet"
 
         with requests.session() as s:
             #登入帳號密碼
+            postData = {
+                'Action': "Authenticate",
+                'UserType': "6",
+                'CounterName': "Shop",
+                'OfficeCode' : OfficeCode,
+                'LoginId' : LoginId,
+                'Passwd' : Passwd
+            }
             try:
                 sleep(randint(1,5))
                 s.post(url, data = postData, timeout=10)
@@ -72,6 +51,22 @@ with open('nccc.txt', 'r') as nccc_account:
             }
                 
             #查詢資料
+            if OfficeCode == '8071210':
+                LoginId = '807'+LoginId+'0001'
+            payload = {
+                'Action':'BookList',
+                'Type':'Read',
+                'AcqFID':OfficeCode,
+                'RetlID':LoginId,
+                'CardNo':'',
+                'BeginDateYY':'2016',
+                'BeginDateMM':'1',
+                'BeginDateDD':'1',
+                'EndDateYY':'2017',
+                'EndDateMM':'12',
+                'EndDateDD':'31',
+                'RequestType':'2'
+            }
             try:
                 sleep(randint(1,5))
                 res = s.post(url, data = payload, timeout=10, headers = headers)
@@ -91,17 +86,12 @@ with open('nccc.txt', 'r') as nccc_account:
             print ('讀取資料')
 
             #寫入資料
-            if not os.path.isfile("nccc.csv"):
-                cr_data.to_csv("nccc.csv", index = False)
+            savefilename = "Taiwan_Traveler_Card_" + datetime.datetime.now().strftime('%Y%m%d') + ".csv"
+            if not os.path.isfile(savefilename):
+                cr_data.to_csv(savefilename, index = False)
             else:
-                cr_data.to_csv("nccc.csv", mode='a', header=False, index = False)
+                cr_data.to_csv(savefilename, mode='a', header=False, index = False)
 
         #完成時列印帳號
         print (LoginId+"處理結束")
 nccc_account.close()
-
-
-# In[ ]:
-
-
-
