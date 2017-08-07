@@ -467,7 +467,3 @@ if __name__ == '__main__':
         print("Totally Finished")
     else:
         print ("Totally Finished")
-
-#  facebook graph api : 212969699079588|9-2n6hY92e9lZ4jOdJ3V2-rHNNw
-#     gtoken='AIzaSyDgutgIOgNTEsvamJd0A0bYAgLBo3V6zvo'
-#     btoken='e788d149c3c65be2cc2d19cf407006228c36e73b'
